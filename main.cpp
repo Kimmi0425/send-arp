@@ -38,11 +38,10 @@ int ip_my(char* dev, char* myip){
 	u_int32_t i;
 	struct ifreq ifr;
 	char ipstr[20];
-	u_int32_t s;
 
-	s = socket(AF_INET, SOCK_DGRAM, 0);
+	i = socket(AF_INET, SOCK_DGRAM, 0);
 	strncpy(ifr.ifr_name, dev, IFNAMSIZ);
-	ioctl(s, SIOCGIFADDR, &ifr);
+	ioctl(i, SIOCGIFADDR, &ifr);
 
 	inet_ntop(AF_INET, ifr.ifr_addr.sa_data+2, ipstr, sizeof(struct sockaddr));
 	printf("my IP address is %s\n", ipstr);
@@ -96,16 +95,15 @@ int send_arp(pcap_t* handle, char* sender_ip, char* target_ip, unsigned char* my
 		return -1;
 	}
 
-	printf("send arp from '%s' to '%s'\n",sender_ip,target_ip);
+	printf("send arp '%s' to '%s'\n",sender_ip,target_ip);
 	printf("my mac address: %02x:%02x:%02x:%02x:%02x:%02x\n", mymac[0],mymac[1],mymac[2],mymac[3],mymac[4],mymac[5]);
 	printf("your mac address: %02x:%02x:%02x:%02x:%02x:%02x\n", yourmac[0],yourmac[1],yourmac[2],yourmac[3],yourmac[4],yourmac[5]);
 
-	printf("sendarp end\n");
 	return 0;
 }
 
 int getyourmac(pcap_t* handle, char* myip, char* yourip, unsigned char* mymac,unsigned char* yourmac){
-	printf("getyourmac start\n");
+
     while(true){
         send_arp(handle, myip, yourip, mymac, yourmac, 1);
 		struct pcap_pkthdr* header;
@@ -121,7 +119,7 @@ int getyourmac(pcap_t* handle, char* myip, char* yourip, unsigned char* mymac,un
 		printf("your mac addr: %02x:%02x:%02x:%02x:%02x:%02x\n", yourmac[0],yourmac[1],yourmac[2],yourmac[3],yourmac[4],yourmac[5]);
 		break;
     }
-	printf("getyourmac end\n");
+
 	return 0;
 }   
 
@@ -139,6 +137,7 @@ int main(int argc, char* argv[]) {
 	Ip sip = Ip(argv[2]);
 	Ip tip = Ip(argv[3]);
 	
+	EthArpPacket *etharp;
 	Mac smac;
 	
 	pcap_t* handle = pcap_open_live(dev, BUFSIZ, 1, 1, errbuf);
@@ -149,8 +148,6 @@ int main(int argc, char* argv[]) {
 	
 	ip_my(dev,myip);
 	mac_my(dev,mymac);
-	
-	EthArpPacket *etharp;
 	
 	while (true) {
 		struct pcap_pkthdr* header;
@@ -179,9 +176,7 @@ int main(int argc, char* argv[]) {
 	}
 
 	smac = etharp->arp_.smac();
-	printf("caught sender's mac address\n");
 	
-
 	pcap_close(handle);
 
 }
